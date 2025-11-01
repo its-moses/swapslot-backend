@@ -14,6 +14,9 @@ WORKDIR /var/www/html
 # Copy app files
 COPY . .
 
+# Copy Nginx configuration
+COPY nginx.conf /etc/nginx/sites-available/default
+
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 

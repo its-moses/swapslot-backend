@@ -21,7 +21,7 @@ return [
 
 
     'allowed_origins' => [
-        'https://swapslot-frontend.vercel.app/',
+        'https://swapslot-frontend.vercel.app',
         'http://localhost:5173',
     ],
 
