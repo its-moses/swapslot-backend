@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('AuthUsersTbl', function (Blueprint $table) {
+        Schema::create('authuserstbl', function (Blueprint $table) {
             $table->id();
             $table->string('name' , 100)->nullable();
-            $table->string('email' , 200)->unique()->nullable();
-            $table->string('password' , 300);
+            $table->string('email' , 191)->unique()->nullable();
+            $table->string('password' , 191);
             $table->timestamps();
         });
     }

@@ -11,13 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('SwapRequestsTbl', function (Blueprint $table) {
+        Schema::create('swaprequeststbl', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('requester_user_id')->constrained('AuthUsersTbl')->onDelete('cascade'); // who initiated swap
-            $table->foreignId('receiver_user_id')->constrained('AuthUsersTbl')->onDelete('cascade'); // whose slot is being requested
+            $table->unsignedBigInteger('requester_user_id');
+            $table->unsignedBigInteger('receiver_user_id');
 
-            $table->foreignId('mySlotId')->constrained('EventsTbl')->onDelete('cascade'); // requester’s slot
-            $table->foreignId('theirSlotId')->constrained('EventsTbl')->onDelete('cascade'); // receiver’s slot
+            // Event slot relations
+            $table->unsignedBigInteger('mySlotId');
+            $table->unsignedBigInteger('theirSlotId');
+
+
+            // Add foreign key constraints explicitly
+            $table->foreign('requester_user_id')->references('id')->on('authuserstbl')->onDelete('cascade');
+            $table->foreign('receiver_user_id')->references('id')->on('authuserstbl')->onDelete('cascade');
+            $table->foreign('mySlotId')->references('id')->on('eventstbl')->onDelete('cascade');
+            $table->foreign('theirSlotId')->references('id')->on('eventstbl')->onDelete('cascade');
 
             $table->enum('status', ['PENDING', 'ACCEPTED', 'REJECTED'])->default('PENDING');
             $table->timestamps();

@@ -8,7 +8,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 
 class AuthUser extends Authenticatable implements JWTSubject
 {
-    protected $table = 'AuthUsersTbl';
+    protected $table = 'authuserstbl';
 
     protected $fillable = [
         'name',

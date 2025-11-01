@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('eventsTbl', function (Blueprint $table) {
+        Schema::create('eventstbl', function (Blueprint $table) {
             $table->id();
-            $table->string('title', 150);
+            $table->string('title', 100);
             $table->timestamp('startTime')->nullable();
             $table->timestamp('endTime')->nullable();
             $table->enum('status', ['BUSY', 'SWAPPABLE', 'SWAP_PENDING'])->default('BUSY');
-            $table->foreignId('user_id')->constrained('AuthUsersTbl')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('authuserstbl')->onDelete('cascade');
             // $table->timestamps();
         });
     }
