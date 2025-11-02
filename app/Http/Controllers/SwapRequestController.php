@@ -16,8 +16,8 @@ class SwapRequestController extends Controller
         try {
             // ✅ Validate input
             $validated = $request->validate([
-                'mySlotId' => 'required|integer|exists:eventsTbl,id',
-                'theirSlotId' => 'required|integer|different:mySlotId|exists:eventsTbl,id',
+                'mySlotId' => 'required|integer|exists:eventstbl,id',
+                'theirSlotId' => 'required|integer|different:mySlotId|exists:eventstbl,id',
             ]);
 
             $userId = Auth::id();
