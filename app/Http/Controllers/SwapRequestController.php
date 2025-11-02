@@ -75,41 +75,49 @@ class SwapRequestController extends Controller
         }
     }
     public function respondToSwap(Request $request)
-    {
-        try {
-            // ✅ Validate input
-            $validated = $request->validate([
-                'requestId' => 'required|integer|exists:swaprequeststbl,id',
-                'action' => 'required|string|in:ACCEPT,REJECT',
-            ]);
+{
+    try {
+        // ✅ Validate input
+        $validated = $request->validate([
+            'requestId' => 'required|integer|exists:swaprequeststbl,id',
+            'action' => 'required|string|in:ACCEPT,REJECT',
+        ]);
 
-            $userId = Auth::id();
+        $userId = Auth::id();
 
-            // ✅ Find swap request
-            $swapRequest = SwapRequest::find($validated['requestId']);
+        // ✅ Find swap request
+        $swapRequest = SwapRequest::find($validated['requestId']);
 
-            if (!$swapRequest) {
-                return response()->json([
-                    'type' => 'warning',
-                    'msg' => 'Swap request not found.',
-                ], 404);
-            }
+        if (!$swapRequest) {
+            return response()->json([
+                'type' => 'warning',
+                'msg' => 'Swap request not found.',
+            ], 404);
+        }
 
-            // ✅ Get slots
-            $mySlot = EventsTbl::find($swapRequest->mySlotId);
-            $theirSlot = EventsTbl::find($swapRequest->theirSlotId);
+        // ✅ Get slots
+        $mySlot = EventsTbl::find($swapRequest->mySlotId);
+        $theirSlot = EventsTbl::find($swapRequest->theirSlotId);
 
-            // ✅ Ensure logged-in user owns the target slot (theirSlot)
-            if ($theirSlot->user_id !== $userId) {
-                return response()->json([
-                    'type' => 'warning',
-                    'msg' => 'You are not authorized to respond to this swap request.',
-                ], 403);
-            }
+        // ✅ Ensure slots exist first
+        if (!$mySlot || !$theirSlot) {
+            return response()->json([
+                'type' => 'warning',
+                'msg' => 'One or both slots no longer exist.',
+            ], 400);
+        }
 
-            // ✅ Ensure both slots still exist and are pending
+        // ✅ Ensure logged-in user owns the target slot (theirSlot)
+        if ($theirSlot->user_id !== $userId) {
+            return response()->json([
+                'type' => 'warning',
+                'msg' => 'You are not authorized to respond to this swap request.',
+            ], 403);
+        }
+
+        // ✅ Allow REJECT to go through even if slot status changed
+        if ($validated['action'] === 'ACCEPT') {
             if (
-                !$mySlot || !$theirSlot ||
                 $mySlot->status !== 'SWAP_PENDING' ||
                 $theirSlot->status !== 'SWAP_PENDING'
             ) {
@@ -119,56 +127,55 @@ class SwapRequestController extends Controller
                 ], 400);
             }
 
-            // ✅ Handle the response based on action
-            if ($validated['action'] === 'ACCEPT') {
-                // ✅ ACCEPT CASE
-                $swapRequest->update(['status' => 'ACCEPTED']);
+            // ACCEPT CASE
+            $swapRequest->update(['status' => 'ACCEPTED']);
 
-                // Swap the owners
-                $tempUser = $mySlot->user_id;
-                $mySlot->user_id = $theirSlot->user_id;
-                $theirSlot->user_id = $tempUser;
+            // Swap the owners
+            $tempUser = $mySlot->user_id;
+            $mySlot->user_id = $theirSlot->user_id;
+            $theirSlot->user_id = $tempUser;
 
-                // Set both slots back to BUSY
-                $mySlot->status = 'BUSY';
-                $theirSlot->status = 'BUSY';
+            // Set both slots back to BUSY
+            $mySlot->status = 'BUSY';
+            $theirSlot->status = 'BUSY';
 
-                $mySlot->save();
-                $theirSlot->save();
+            $mySlot->save();
+            $theirSlot->save();
 
-                return response()->json([
-                    'type' => 'success',
-                    'msg' => 'Swap accepted successfully. Slots exchanged.',
-                    'data' => $swapRequest,
-                ], 200);
-            } else {
-                // ❌ REJECT CASE
-                $swapRequest->update(['status' => 'REJECTED']);
-
-                // Revert both slots back to SWAPPABLE
-                $mySlot->update(['status' => 'SWAPPABLE']);
-                $theirSlot->update(['status' => 'SWAPPABLE']);
-
-                return response()->json([
-                    'type' => 'warning',
-                    'msg' => 'Swap request rejected.',
-                    'data' => $swapRequest,
-                ], 200);
-            }
-        } catch (ValidationException $e) {
             return response()->json([
-                'type' => 'warning',
-                'msg' => 'Validation failed.',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
+                'type' => 'success',
+                'msg' => 'Swap accepted successfully. Slots exchanged.',
+                'data' => $swapRequest,
+            ], 200);
+        } else {
+            // REJECT CASE
+            $swapRequest->update(['status' => 'REJECTED']);
+
+            // Revert both slots back to SWAPPABLE
+            $mySlot->update(['status' => 'SWAPPABLE']);
+            $theirSlot->update(['status' => 'SWAPPABLE']);
+
             return response()->json([
-                'type' => 'error',
-                'msg' => 'Something went wrong while responding to the swap request.',
-                'error' => $e->getMessage(),
-            ], 500);
+                'type' => 'success',
+                'msg' => 'Swap request has Been Rejected Successfully',
+                'data' => $swapRequest,
+            ], 200);
         }
+
+    } catch (ValidationException $e) {
+        return response()->json([
+            'type' => 'warning',
+            'msg' => 'Validation failed.',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (\Exception $e) {
+        return response()->json([
+            'type' => 'error',
+            'msg' => 'Something went wrong while responding to the swap request.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
     public function incoming()
     {
         try {
